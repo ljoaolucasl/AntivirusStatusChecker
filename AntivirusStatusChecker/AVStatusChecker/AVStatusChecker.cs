@@ -13,23 +13,28 @@ public static class AVStatusChecker
     private const string WmiQuery = "SELECT * FROM AntiVirusProduct";
 
     /// <summary>
-    /// Consulta o status dos antivírus e exibe as informações formatadas.
+    /// Consulta o status dos antivírus a cada 1 segundos até encontrar um antivírus com assinatura desatualizada.
     /// </summary>
-    public static void CheckAntivirusStatus()
+    public static async Task CheckAntivirusStatusAsync()
     {
-        using var searcher = new ManagementObjectSearcher(WmiScope, WmiQuery);
-        using var results = searcher.Get();
-
-        foreach (var av in results.Cast<ManagementObject>())
+        while (true)
         {
-            var name = av["displayName"]?.ToString() ?? "Unknown";
-            var productState = (uint)(av["productState"] ?? 0);
+            using var searcher = new ManagementObjectSearcher(WmiScope, WmiQuery);
+            using var results = searcher.Get();
 
-            var protectionStatus = GetProtectionStatus(productState);
-            var signaturesStatus = GetSignaturesStatus(productState);
+            foreach (var av in results.Cast<ManagementObject>())
+            {
+                var name = av["displayName"]?.ToString() ?? "Unknown";
+                var productState = (uint)(av["productState"] ?? 0);
 
-            var antivirusInfo = new AntivirusInfo(name, protectionStatus, signaturesStatus);
-            Console.WriteLine(antivirusInfo.ToString());
+                var protectionStatus = GetProtectionStatus(productState);
+                var signaturesStatus = GetSignaturesStatus(productState);
+
+                var antivirusInfo = new AntivirusInfo(name, protectionStatus, signaturesStatus);
+                Console.WriteLine(antivirusInfo.ToString());
+            }
+
+            await Task.Delay(5000);
         }
     }
 
